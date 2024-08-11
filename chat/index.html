@@ -1,0 +1,300 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ChatterUp - chatting application</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:ital,wght@0,100;0,200;0,300;0,400;0,500;0,600;0,700;0,800;0,900;1,100;1,200;1,300;1,400;1,500;1,600;1,700;1,800;1,900&display=swap" rel="stylesheet">
+    <script src="https://kit.fontawesome.com/951b14ea33.js" crossorigin="anonymous"></script>
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+    <div id="chat-grp">
+        <div id="status-tab">
+            <div id="online">
+                <i class="fa-solid fa-globe"></i> &nbsp;&nbsp;
+                Online: 0
+            </div>
+            <div id="tab-grp">
+                <!-- <div class="tab">
+                    <i class="fa-solid fa-circle"></i> &nbsp;&nbsp;
+                    Saumil Saxena<div id="Saumil Saxena" class="typing">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;typing...</div>
+                </div>
+                <div class="tab">
+                    <i class="fa-solid fa-circle"></i> &nbsp;&nbsp;
+                    Aditya Satokar<div class="typing">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;typing...</div>
+                </div> -->
+            </div>
+        </div>
+        <div id="chat">
+            <div id="welcome">
+                <i class="fa-solid fa-comments"></i>
+            </div>
+            <div id="messages">
+                <!-- <div class="message-block-left">
+                    <img class="DP" src="https://cdn-icons-png.flaticon.com/256/149/149071.png" alt="user">
+                    <div class="message-grp">
+                        <div class="message-head">
+                            <span class="name">Saumil Saxena</span>
+                            <span>10:30 AM</span>
+                        </div>
+                        hyeee!!!
+                    </div>
+                </div>
+                <div class="message-block-right">
+                    <img class="DP" src="https://cdn-icons-png.flaticon.com/256/149/149071.png" alt="user">
+                    <div class="message-grp bg-green">
+                        <div class="message-head">
+                            <span class="name">Aditya Satokar</span>
+                            <span>10:34 AM</span>
+                        </div>
+                        bhai 2 roti khane de arha hun
+                    </div>
+                </div> -->
+            </div>
+            <div id="message">
+                <input id="chat-input" placeholder="Your Message" title="text" type="text"></input>
+                <button title="send-btn" id="send-btn"><i class="fa-solid fa-angles-right"></i></button>
+            </div>
+        </div>
+    </div>
+
+    <script src="http://localhost:5000/socket.io/socket.io.js"></script>
+    <script>
+        const socket = io.connect("http://localhost:5000");
+
+        socket.on("getName",()=>{
+            let name = "";
+            while(name === null || name.trim() === ""){
+                name = prompt("please enter your name!");
+            }
+            socket.name = name;
+            socket.emit("join",name);
+        });
+
+        socket.on("joined",async(clients,chats)=>{
+            const name = socket.name;
+            const welcome = document.getElementById('welcome');
+            welcome.innerHTML = `<i class="fa-solid fa-comments"></i> &nbsp;&nbsp; welcome ${name}!`;
+
+            const online = document.getElementById("online");
+            online.innerHTML = `<i class="fa-solid fa-globe"></i> &nbsp;&nbsp;
+            Online: ${clients.length}`;
+
+            const tabGrp = document.getElementById("tab-grp");
+            tabGrp.innerHTML = "";
+            clients.forEach(client=>{
+                const tab = document.createElement("div");
+                tab.classList.add("tab");
+                tab.innerHTML = `<i class="fa-solid fa-circle"></i> &nbsp;&nbsp;
+                ${client.name}<div id="${client.id}" class="typing">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;typing...</div>`;
+                tabGrp.appendChild(tab);
+            });
+
+            const chatBox = document.getElementById("messages");
+            chats.forEach((chat)=>{
+                const time = new Date(chat.time);
+                let hours = time.getHours();
+                let minutes = time.getMinutes();
+                let meridiem;
+
+                minutes = minutes < 10 ? "0"+minutes : minutes;
+
+                if(hours === 0){
+                    hours = 12;
+                    meridiem = "AM";
+                }else if(hours > 12){
+                    hours = hours - 12;
+                    hours = hours < 10 ? "0"+hours : hours;
+                    meridiem = "PM";
+                }else{
+                    hours = hours < 10 ? "0"+hours : hours;
+                    meridiem = "AM";
+                }
+
+                const messageBlock = document.createElement("div");
+                if(chat.name === name){
+                    messageBlock.classList.add("message-block-right");
+                    messageBlock.innerHTML = 
+                    `<img class="DP" src="https://cdn-icons-png.flaticon.com/256/149/149071.png" alt="user">
+                        <div class="message-grp bg-green">
+                            <div class="message-head">
+                                <span class="name">You</span>
+                                <span>${hours}:${minutes} ${meridiem}</span>
+                            </div>
+                            ${chat.message}
+                        </div>`
+                    chatBox.appendChild(messageBlock);
+                }else{
+                    messageBlock.classList.add("message-block-left");
+                    messageBlock.innerHTML = 
+                    `<img class="DP" src="https://cdn-icons-png.flaticon.com/256/149/149071.png" alt="user">
+                        <div class="message-grp">
+                            <div class="message-head">
+                                <span class="name">${chat.name}</span>
+                                <span>${hours}:${minutes} ${meridiem}</span>
+                            </div>
+                            ${chat.message}
+                        </div>`
+                    chatBox.appendChild(messageBlock);
+                }
+            });
+        });
+
+        socket.on("updateStatus",(clients)=>{
+            const online = document.getElementById("online");
+            online.innerHTML = `<i class="fa-solid fa-globe"></i> &nbsp;&nbsp;
+            Online: ${clients.length}`;
+
+            const tabGrp = document.getElementById("tab-grp");
+            tabGrp.innerHTML = "";
+            clients.forEach(client=>{
+                const tab = document.createElement("div");
+                tab.classList.add("tab");
+                tab.innerHTML = `<i class="fa-solid fa-circle"></i> &nbsp;&nbsp;
+                ${client.name}<div id="${client.id}" class="typing">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;typing...</div>`;
+                tabGrp.appendChild(tab);
+            });
+        });
+
+        socket.on("chat",(message,name,hours,minutes,meridiem)=>{
+            if(socket.name !== name){
+                const chatBox = document.getElementById("messages");
+                const messageBlock = document.createElement("div");
+                messageBlock.classList.add("message-block-left");
+                messageBlock.innerHTML = 
+                `<img class="DP" src="https://cdn-icons-png.flaticon.com/256/149/149071.png" alt="user">
+                <div class="message-grp">
+                    <div class="message-head">
+                        <span class="name">${name}</span>
+                        <span>${hours}:${minutes} ${meridiem}</span>
+                    </div>
+                    ${message}
+                </div>`
+                chatBox.appendChild(messageBlock);
+            }
+            const notificationSound = new Audio("../notification.mp3");
+            notificationSound.play().then(() => {
+                console.log('Notification sound played successfully');
+            }).catch((error) => {
+                console.error('Error playing notification sound:', error);
+            });
+        });
+
+        socket.on("typing",(typing,id)=>{
+            if(id !== socket.id){
+                if(typing){
+                const indicator = document.getElementById(id);
+                indicator.style.display = "block";
+                }else{
+                    const indicator = document.getElementById(id);
+                    indicator.style.display = "none";
+                }
+            }
+        });
+
+        const sendbtn = document.getElementById("send-btn");
+        sendbtn.addEventListener("click",()=>{
+            event.preventDefault();
+            const message = document.getElementById("chat-input");
+            if(message.value){
+                const date = new Date();
+                let hours = date.getHours();
+                let minutes = date.getMinutes();
+                let meridiem;
+
+                minutes = minutes < 10 ? "0"+minutes : minutes;
+
+                if(hours === 0){
+                    hours = 12;
+                    meridiem = "AM";
+                }else if(hours > 12){
+                    hours = hours - 12;
+                    hours = hours < 10 ? "0"+hours : hours;
+                    meridiem = "PM";
+                }else{
+                    hours = hours < 10 ? "0"+hours : hours;
+                    meridiem = "AM";
+                }
+
+                const chatBox = document.getElementById("messages");
+                const messageBlock = document.createElement("div");
+                messageBlock.classList.add("message-block-right");
+                messageBlock.innerHTML = 
+                `<img class="DP" src="https://cdn-icons-png.flaticon.com/256/149/149071.png" alt="user">
+                    <div class="message-grp bg-green">
+                        <div class="message-head">
+                            <span class="name">You</span>
+                            <span>${hours}:${minutes} ${meridiem}</span>
+                        </div>
+                        ${message.value}
+                    </div>`
+                chatBox.appendChild(messageBlock);
+                socket.emit("new-chat",message.value,socket.name,hours,minutes,meridiem,date);
+                message.value="";
+            }
+        });
+
+        document.addEventListener("keydown",(event)=>{
+            const key = event.key.toLowerCase();
+            if(key === "enter"){
+                const message = document.getElementById("chat-input");
+                if(message.value){
+                    const date = new Date();
+                    let hours = date.getHours();
+                    let minutes = date.getMinutes();
+                    let meridiem;
+                    
+                    minutes = minutes < 10 ? "0"+minutes : minutes;
+
+                    if(hours === 0){
+                        hours = 12;
+                        meridiem = "AM";
+                    }else if(hours > 12){
+                        hours = hours - 12;
+                        hours = hours < 10 ? "0"+hours : hours;
+                        meridiem = "PM";
+                    }else{
+                        hours = hours < 10 ? "0"+hours : hours;
+                        meridiem = "AM";
+                    }
+
+                    const chatBox = document.getElementById("messages");
+                    const messageBlock = document.createElement("div");
+                    messageBlock.classList.add("message-block-right");
+                    messageBlock.innerHTML = 
+                    `<img class="DP" src="https://cdn-icons-png.flaticon.com/256/149/149071.png" alt="user">
+                        <div class="message-grp bg-green">
+                            <div class="message-head">
+                                <span class="name">You</span>
+                                <span>${hours}:${minutes} ${meridiem}</span>
+                            </div>
+                            ${message.value}
+                        </div>`
+                    chatBox.appendChild(messageBlock);
+                    socket.emit("new-chat",message.value,socket.name,hours,minutes,meridiem);
+                    message.value="";
+                }
+            }
+        });
+
+        let typingTimeout;
+        let typing = false;
+        const chatInput = document.getElementById("chat-input");
+        chatInput.addEventListener("input",()=>{
+            if(!typing){
+                typing = true;
+                socket.emit("type",typing,socket.id);
+            }
+
+            clearTimeout(typingTimeout);
+            typingTimeout = setTimeout(()=>{
+                typing = false;
+                socket.emit("type",typing,socket.id);
+            },1000);
+        });
+    </script>
+</body>
+</html>
