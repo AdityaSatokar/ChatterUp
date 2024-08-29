@@ -1,0 +1,1 @@
+if you have downloaded the project and want to test the application, then run the index.js file on NodeJS using "node index.js" command, when it run successfully then in the chat folder open the html file to continue. make sure to run mongo DB compass as it uses a database from where it will fetch the information and also will store it.
